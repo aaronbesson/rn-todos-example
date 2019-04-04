@@ -1,18 +1,19 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { lighterWhite } from '../utils/Colors';
 
 const SubTitle = ({ subtitle }) => (
-	<Text style={[styles.titleText, { color: lighterWhite }]}>
-		{subtitle.toUpperCase()}
-	</Text>
+	<View>
+		<Text style={styles.titleText}>{subtitle}</Text>
+	</View >
 );
 
 const styles = StyleSheet.create({
 	titleText: {
-		fontSize: 16,
-		fontWeight: '500'
+		fontSize: 48,
+		fontWeight: '500',
+		marginLeft: 0
 	}
 });
 

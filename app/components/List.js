@@ -1,14 +1,16 @@
 import React, { Component } from 'react';
 import {
 	View,
+	Alert,
 	Text,
+	Share,
 	Dimensions,
 	StyleSheet,
 	TouchableOpacity,
-	Platform
+	Platform, Animated, Easing
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-
+import Moment from 'react-moment';
 import {
 	itemListText,
 	itemListTextStrike,
@@ -16,12 +18,21 @@ import {
 	circleActive,
 	deleteIconColor
 } from '../utils/Colors';
+import Autolink from 'react-native-autolink';
+import Swipeable from 'react-native-swipeable-row';
+import moment from 'moment/min/moment-with-locales';
+
 
 const { width } = Dimensions.get('window');
 
+// Sets the moment instance to use.
+Moment.globalMoment = moment;
+Moment.globalFormat = 'LLL';
+
+
 class List extends Component {
 	onToggleCircle = () => {
-		const { isCompleted, id, completeItem, incompleteItem } = this.props;
+		const { isCompleted, createdAt, id, completeItem, incompleteItem } = this.props;
 		if (isCompleted) {
 			incompleteItem(id);
 		} else {
@@ -29,47 +40,109 @@ class List extends Component {
 		}
 	};
 
-	render() {
-		const { text, deleteItem, id, isCompleted } = this.props;
+	onShare = () => {
+		try {
+			const result = Share.share({
+				message: this.props.text,
+			})
 
+			if (result.action === Share.sharedAction) {
+				if (result.activityType) {
+					// shared with activity type of result.activityType
+				} else {
+					// shared
+				}
+			} else if (result.action === Share.dismissedAction) {
+				// dismissed
+			}
+		} catch (error) {
+			alert(error.message);
+		}
+	};
+
+
+	render() {
+		const { date, text, deleteItem, id, isCompleted, createdAt } = this.props;
+		const unixTimestamp = createdAt;
+		const rightButtons = [
+			<View style={
+				{
+					flexDirection: 'row',
+					flex: 1,
+					marginLeft: 10
+				}
+			}><TouchableOpacity
+				onPress={this.onShare}
+			>
+					<View style={
+						styles.share
+					}>
+						<MaterialIcons
+							name="share"
+							size={24}
+							color="#fff"
+						/>
+					</View>
+				</TouchableOpacity>,
+			<TouchableOpacity
+					onPressOut={() => deleteItem(id)}
+				>
+					<View style={
+						styles.delete
+					}>
+						<MaterialIcons
+							name="delete"
+							size={24}
+							color="#fff"
+						/>
+					</View>
+				</TouchableOpacity>
+			</View>
+
+		];
 		return (
 			<View style={styles.container}>
-				<View style={styles.column}>
-					<TouchableOpacity onPress={this.onToggleCircle}>
-						<View
-							style={[
-								styles.circle,
-								isCompleted
-									? { borderColor: circleActive }
-									: { borderColor: circleInactive }
-							]}
-						/>
-					</TouchableOpacity>
-					<Text
-						style={[
-							styles.text,
-							isCompleted
-								? {
-										color: itemListTextStrike,
-										textDecorationLine: 'line-through'
-								  }
-								: { color: itemListText }
-						]}
-					>
-						{text}
-					</Text>
-				</View>
-				{isCompleted ? (
-					<View style={styles.button}>
-						<TouchableOpacity onPressOut={() => deleteItem(id)}>
+				<Swipeable
+					rightButtons={rightButtons}
+					rightButtonWidth={100}
+					style={{ paddingRight: 0 }}
+				>
+					<View style={styles.column}>
+						<TouchableOpacity onPress={this.onToggleCircle}>
 							<MaterialIcons
-								name="delete-forever"
-								size={24}
-								color={deleteIconColor}
-							/>
+								name={isCompleted ? 'check-circle' : 'radio-button-unchecked'}
+								size={25}
+								style={{ marginRight: 8 }}
+								color='#00DD99' />
 						</TouchableOpacity>
+						<View style={{ paddingRight: 20 }}>
+							<Autolink
+								hashtag="instagram"
+								text={text}
+								latlng
+								mention="twitter"
+								style={[
+									styles.text,
+									isCompleted
+										? {
+											color: itemListTextStrike,
+											textDecorationLine: 'line-through',
+											fontStyle: 'italic'
+										}
+										: { color: itemListText }
+								]}
+							>
+								<Text
+
+								>
+									{text}
+								</Text></Autolink>
+							<Text style={{ fontSize: 12, color: '#bbb', marginTop: 5 }}>
+								<Moment utc-4 element={Text}>{unixTimestamp}</Moment></Text>
+						</View>
+
 					</View>
-				) : null}
+				</Swipeable>
 			</View>
 		);
 	}
@@ -77,49 +150,51 @@ class List extends Component {
 
 const styles = StyleSheet.create({
 	container: {
-		width: width - 50,
+		width: '100%',
+		paddingVertical: 14,
 		flexDirection: 'row',
-		borderRadius: 5,
-		backgroundColor: 'white',
-		height: width / 8,
+		backgroundColor: '#fff',
 		alignItems: 'center',
-		justifyContent: 'space-between',
-		marginTop: 5,
-		marginBottom: 10,
-		...Platform.select({
-			ios: {
-				shadowColor: 'rgb(50,50,50)',
-				shadowOpacity: 0.8,
-				shadowRadius: 2,
-				shadowOffset: {
-					height: 2,
-					width: 0
-				}
-			},
-			android: {
-				elevation: 5
-			}
-		})
+		borderBottomWidth: 1,
+		borderBottomColor: '#ececec',
+	},
+	share: {
+		backgroundColor: '#4A90E2',
+		height: 40,
+		width: 40,
+		marginRight: 10,
+		borderRadius: 99,
+		alignItems: 'center',
+		justifyContent: 'center'
 	},
 	column: {
 		flexDirection: 'row',
-		alignItems: 'center',
-		width: width / 1.5
+		width: width,
 	},
 	text: {
+		color: '#222',
 		fontWeight: '500',
-		fontSize: 16,
-		marginVertical: 15
+		fontSize: 17,
+		paddingRight: 40,
+		width: 350
+	},
+	delete: {
+		backgroundColor: '#FF4B61',
+		height: 40,
+		width: 40,
+		borderRadius: 99,
+		alignItems: 'center',
+		justifyContent: 'center'
 	},
 	circle: {
 		width: 30,
 		height: 30,
 		borderRadius: 15,
-		borderWidth: 3,
-		margin: 10
+		borderWidth: 8,
+		marginHorizontal: 15,
 	},
 	button: {
-		marginRight: 10
+		marginRight: 15
 	}
 });
 
